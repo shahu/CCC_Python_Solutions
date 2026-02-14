@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CCC 2024 J4 - 算法可视化 - set-based 推理</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Menlo', 'Courier New', monospace;
+            background-color: #f0f4f8;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 250px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .visualization {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            min-height: 300px;
+        }
+
+        .string-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .label {
+            font-weight: bold;
+            width: 80px;
+            text-align: right;
+            margin-right: 15px;
+            color: #7f8c8d;
+        }
+
+        .char-box {
+            display: inline-flex;
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #ddd;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-size: 20px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pointer {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            transition: left 0.3s ease-in-out;
+            z-index: 10;
+        }
+
+        .pointer-in {
+            border-bottom: 15px solid #e74c3c;
+            /* Red Input Pointer */
+            bottom: -20px;
+        }
+
+        .pointer-out {
+            border-top: 15px solid #27ae60;
+            /* Green Output Pointer */
+            top: -20px;
+        }
+
+        /* 变量状态面板 */
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 6px;
+        }
+
+        .status-item {
+            text-align: center;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .status-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .log {
+            height: 150px;
+            overflow-y: auto;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-success {
+            color: #2ecc71;
+        }
+
+        .log-error {
+            color: #e74c3c;
+        }
+
+        .log-info {
+            color: #3498db;
+        }
+
+        .log-warn {
+            color: #f39c12;
+        }
+
+        /* 状态样式 */
+        .char-current {
+            background-color: #f1c40f !important;
+            border-color: #f39c12 !important;
+            transform: scale(1.1);
+        }
+
+        .char-match {
+            background-color: #2ecc71 !important;
+            color: white !important;
+            border-color: #27ae60 !important;
+        }
+
+        .char-silly {
+            background-color: #e74c3c !important;
+            color: white !important;
+            border-color: #c0392b !important;
+        }
+
+        .char-quiet {
+            background-color: #bdc3c7 !important;
+            color: #7f8c8d !important;
+            border-color: #95a5a6 !important;
+            opacity: 0.6;
+        }
+
+        .char-wrong {
+            background-color: #9b59b6 !important;
+            color: white !important;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>CCC 2024 J4 - 算法可视化</h1>
+
+    <div class="controls">
+        <input type="text" id="inputStr" value="for loops" placeholder="输入字符串 (Input)">
+        <input type="text" id="outputStr" value="fxr lxpps" placeholder="输出字符串 (Output)">
+        <button onclick="startVisualization()">开始运行 (Start)</button>
+        <button onclick="stopVisualization()" style="background-color: #e74c3c;">停止 (Stop)</button>
+        <div style="flex-grow: 1; text-align: right;">
+            速度: <input type="range" id="speed" min="50" max="1000" value="700" style="width: 100px;">
+        </div>
+    </div>
+
+    <div class="visualization">
+
+        <div class="status-panel">
+            <div class="status-item">
+                <span class="status-label">候选坏键 (Candidates)</span>
+                <span class="status-value" id="val-candidates">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">当前坏键 (Silly)</span>
+                <span class="status-value" id="val-silly">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">推导错字 (Wrong Char)</span>
+                <span class="status-value" id="val-wrong">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">推导静音键 (Quiet)</span>
+                <span class="status-value" id="val-quiet">-</span>
+            </div>
+        </div>
+
+        <div class="string-container" id="inputContainer">
+            <div class="label">Input</div>
+            <div id="inputChars"></div>
+            <!-- 指针由JS动态添加 -->
+        </div>
+
+        <div class="string-container" id="outputContainer">
+            <div class="label">Output</div>
+            <div id="outputChars"></div>
+            <!-- 指针由JS动态添加 -->
+        </div>
+
+        <div class="log" id="logConsole"></div>
+
+    </div>
+
+    <script>
+        let isRunning = false;
+        let stopWrapper = { stop: false };
+
+        function log(msg, type = 'info') {
+            const consoleEl = document.getElementById('logConsole');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerText = `> ${msg}`;
+            consoleEl.appendChild(entry);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logConsole').innerHTML = '';
+        }
+
+        function createChars(str, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear previous
+            for (let i = 0; i < str.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char-box';
+                span.innerText = str[i];
+                span.id = `${containerId}-char-${i}`;
+                container.appendChild(span);
+            }
+        }
+
+        function updateStatus(id, val) {
+            document.getElementById(`val-${id}`).innerText = val !== null ? val : '-';
+        }
+
+        // Delay helper
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function startVisualization() {
+            if (isRunning) return;
+            isRunning = true;
+            stopWrapper.stop = false; // Reset stop flag
+            clearLog();
+
+            const inputStr = document.getElementById('inputStr').value;
+            const outputStr = document.getElementById('outputStr').value;
+            const speed = parseInt(document.getElementById('speed').value);
+            const waitTime = () => 1050 - parseInt(document.getElementById('speed').value);
+
+            createChars(inputStr, 'inputChars');
+            createChars(outputStr, 'outputChars');
+
+            log(`开始分析... input="${inputStr}", output="${outputStr}"`);
+
+            const inputSet = new Set(inputStr);
+            const outputSet = new Set(outputStr);
+
+            let candidates = [...inputSet].filter(x => !outputSet.has(x));
+            candidates.sort();
+
+            log(`计算候选坏键: set(Input) - set(Output) = {${candidates.join(',')}}`);
+
+            if (candidates.length === 0) {
+                log("差集为空，退回到 inputSet", "warn");
+                candidates = [...inputSet].sort();
+            }
+
+            updateStatus('candidates', `{${candidates.join(',')}}`);
+
+            // 2. Loop Candidates
+            for (let silly of candidates) {
+                if (stopWrapper.stop) break;
+
+                log(`\n--- 尝试假设：坏键 Silly = '${silly}' ---`, 'info');
+                updateStatus('silly', silly);
+                updateStatus('wrong', null);
+                updateStatus('quiet', null);
+
+                // Reset visual styles
+                document.querySelectorAll('.char-box').forEach(el => el.className = 'char-box');
+
+                let pj = 0;
+                let quiet = null;
+                let wrongChar = null;
+                let possible = true;
+
+                for (let pi = 0; pi < inputStr.length; pi++) {
+                    if (stopWrapper.stop) { possible = false; break; }
+
+                    const inEl = document.getElementById(`inputChars-char-${pi}`);
+                    inEl.classList.add('char-current');
+
+                    // Highlight corresponding output char if exists
+                    let outEl = null;
+                    if (pj < outputStr.length) {
+                        outEl = document.getElementById(`outputChars-char-${pj}`);
+                        if (outEl) outEl.classList.add('char-current');
+                    }
+
+                    await delay(waitTime());
+
+                    const inChar = inputStr[pi];
+                    let isQuiet = false;
+
+                    // 1. Quiet Key Check (Known)
+                    if (inChar === quiet) {
+                        log(`  [${pi}] '${inChar}' 是已知的静音键，跳过`, 'info');
+                        inEl.className = 'char-box char-quiet';
+                        if (outEl) outEl.classList.remove('char-current');
+                        isQuiet = true;
+                    }
+
+                    // 2. Silly Key Check
+                    else if (inChar === silly) {
+                        log(`  [${pi}] '${inChar}' 是坏键 (Silly)`, 'info');
+                        inEl.className = 'char-box char-silly';
+
+                        if (pj >= outputStr.length) {
+                            log(`    Error: 需要输出字符，但 Output 已耗尽`, 'error');
+                            possible = false;
+                            if (outEl) outEl.classList.remove('char-current');
+                            inEl.classList.add('char-wrong');
+                            break;
+                        }
+
+                        const currentOutChar = outputStr[pj];
+
+                        if (wrongChar === null) {
+                            wrongChar = currentOutChar;
+                            updateStatus('wrong', wrongChar);
+                            log(`    推导: 坏键应该显示为 '${wrongChar}'`, 'success');
+                        } else if (currentOutChar !== wrongChar) {
+                            log(`    Error: 坏键显示不一致! 期望 '${wrongChar}', 实际 '${currentOutChar}'`, 'error');
+                            possible = false;
+                            if (outEl) outEl.classList.remove('char-current');
+                            inEl.classList.add('char-wrong');
+                            break;
+                        }
+
+                        if (outEl) {
+                            outEl.className = 'char-box char-wrong';
+                            // Remove current highlight from outEl so we can see the color
+                            outEl.classList.remove('char-current');
+                        }
+                        pj++;
+                    }
+
+                    // 3. Normal / Potential Quiet Inference
+                    else {
+                        // Match Case
+                        if (pj < outputStr.length && inChar === outputStr[pj]) {
+                            log(`  [${pi}] '${inChar}' 匹配 Output[${pj}]`, 'success');
+                            inEl.className = 'char-box char-match';
+                            if (outEl) {
+                                outEl.className = 'char-box char-match';
+                                outEl.classList.remove('char-current');
+                            }
+                            pj++;
+                        }
+                        // Mismatch Case -> Must be Quiet
+                        else {
+                            if (quiet === null) {
+                                quiet = inChar;
+                                updateStatus('quiet', quiet);
+                                inEl.className = 'char-box char-quiet';
+                                log(`  [${pi}] '${inChar}' 不匹配 -> 推导为静音键 (Quiet)`, 'success');
+                                if (outEl) outEl.classList.remove('char-current');
+                                // Do not increment pj
+                            } else {
+                                // Already have a quiet key, and this isn't it (checked at step 1), 
+                                // and it doesn't match output. So it's an error.
+                                log(`    Error: '${inChar}' 不匹配，且静音键已定为 '${quiet}'`, 'error');
+                                possible = false;
+                                if (outEl) outEl.classList.remove('char-current');
+                                inEl.classList.add('char-wrong');
+                                break;
+                            }
+                        }
+                    }
+
+                    inEl.classList.remove('char-current'); // Remove highlight from current input
+                    await delay(waitTime() / 2);
+                }
+
+                if (stopWrapper.stop) break;
+
+                if (possible && pj === outputStr.length) {
+                    log(`\n🎉 验证成功!`, 'success');
+                    const resultMsg = `Silly: ${silly} (${wrongChar})\nQuiet: ${quiet ? quiet : '-'}`;
+                    log(resultMsg, 'success');
+                    alert(`找到正解!\n${resultMsg}`);
+                    isRunning = false;
+                    return;
+                } else {
+                    if (possible && pj !== outputStr.length) {
+                        log(`Failed: Output 还有剩余字符未匹配`, 'error');
+                    } else if (!possible) {
+                        log(`Failed: 当前假设不成立`, 'error');
+                    }
+                }
+
+                await delay(1000);
+            }
+
+            if (!stopWrapper.stop) {
+                log("所有候选键尝试完毕，未找到解。", 'error');
+            }
+            isRunning = false;
+        }
+
+        function stopVisualization() {
+            if (isRunning) {
+                stopWrapper.stop = true;
+                log("正在停止...", 'warn');
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
