@@ -21,85 +21,80 @@ def solve():
     input_str = input().strip()
     output_str = input().strip()
     
-    # Try all possible pairs of (silly_key, quiet_key) isn't feasible (26*26)
-    # But we can iterate and check consistency.
+    # 核心思路：坏键(Silly)一定出现在 Input 中，但不会以原样出现在 Output 中
+    # (因为它总是被替换成了别的字符)。
+    # 所以，坏键一定是 set(Input) - set(Output) 的成员。
+    input_set = set(input_str)
+    output_set = set(output_str)
+    candidate_silly_keys = list(input_set - output_set)
     
-    # Strategy:
-    # 1. Identify all unique characters in input
-    # 2. Iterate through possible silly keys and quiet keys
+    # 如果没找到（比如坏键替换成了已经在 output 里的字符），
+    # 或者为了保险，可以回退到 input_set。但根据题目逻辑，差集通常很小（1-3个字符）。
+    if not candidate_silly_keys:
+        candidate_silly_keys = list(input_set)
     
-    unique_chars = sorted(list(set(input_str)))
-    possible_silly = unique_chars
-    possible_quiet = unique_chars + [None] # Quiet key might not exist? Problem says "Alex presses the silly key at least once but they don’t necessarily press the quiet key."
-    # So quiet_key could be None if lengths match? No, if lengths differ, quiet key must exist.
+    # 按字母顺序排序，确保确定性（虽然题目只要求唯一解）
+    candidate_silly_keys.sort()
     
-    if len(input_str) == len(output_str):
-        possible_quiet = [None]
-    
-    for silly in possible_silly:
-        for quiet in possible_quiet:
-            if silly == quiet: continue
+    for silly in candidate_silly_keys:
+        # 我们不知道 quiet 是谁，也不道 wrong_char 是谁
+        # 我们可以通过扫描过程推导出来
+        
+        pj = 0 # 指向 output_str
+        quiet = None
+        wrong_char = None
+        possible = True
+        
+        for pi in range(len(input_str)):
+            in_char = input_str[pi]
             
-            # Determine wrong letter
-            # Find first occurrence of silly in input
-            # Map it to displayed
-            
-            wrong_char = None
-            
-            # Simulate
-            simulated = []
-            valid_hypothesis = True
-            
-            # We need to deduce the wrong_char
-            # Scan to find first mismatch that isn't quiet
-            
-            temp_wrong = None
-            
-            idx_in = 0
-            idx_out = 0
-            
-            while idx_in < len(input_str) and idx_out < len(output_str):
-                char = input_str[idx_in]
+            # 1. 如果是已知静音键，直接跳过
+            if in_char == quiet:
+                continue
                 
-                if char == quiet:
-                    idx_in += 1
-                    continue
+            # 2. 如果是假设的坏键
+            if in_char == silly:
+                # 还有输出字符可用吗？
+                if pj >= len(output_str):
+                    possible = False; break
                 
-                if char == silly:
-                    # If we haven't determined wrong_char yet, set it
-                    if temp_wrong is None:
-                        temp_wrong = output_str[idx_out]
-                    
-                    # Check consistency
-                    if output_str[idx_out] != temp_wrong:
-                        valid_hypothesis = False
-                        break
-                    
-                    idx_out += 1
-                    idx_in += 1
+                # 如果还没确定 wrong_char，现在就确定它
+                if wrong_char is None:
+                    wrong_char = output_str[pj]
+                # 检查一致性：坏键必须始终变成同一个 wrong_char
+                elif output_str[pj] != wrong_char:
+                    possible = False; break
+                
+                pj += 1 # 坏键消耗一个输出字符
+                
+            else:
+                # 3. 如果是正常键（或还没被发现的静音键）
+                
+                # 情况 A：匹配上了
+                if pj < len(output_str) and in_char == output_str[pj]:
+                    pj += 1
+                
+                # 情况 B：没匹配上 -> 那这个 in_char 只能是静音键！
                 else:
-                    # Normal char
-                    if char != output_str[idx_out]:
-                        valid_hypothesis = False
-                        break
-                    idx_out += 1
-                    idx_in += 1
-            
-            # Check remaining input (should only be quiet keys)
-            while idx_in < len(input_str):
-                if input_str[idx_in] != quiet:
-                    valid_hypothesis = False
-                    break
-                idx_in += 1
-            
-            if valid_hypothesis and idx_out == len(output_str):
-                # Found it!
-                print(f"{silly} {temp_wrong}")
-                if quiet:
-                    print(quiet)
-                else:
-                    print("-")
-                return
+                    if quiet is None:
+                        quiet = in_char # 推导出静音键！
+                        # 刚刚发现它是静音键，所以这次它不产出字符，pj 不动
+                    elif in_char == quiet:
+                         continue # 已知的静音键，跳过(其实应该进上面的 if quiet 分支，但防御性编程)
+                    else:
+                        # 既不是坏键，也不是静音键，又不匹配 -> 假设错误
+                        possible = False; break
+        
+        # 循环结束，还要检查：
+        # 1. 并没有中途失败 (possible is True)
+        # 2. output_str 必须刚好被用完 (pj == len)
+        if possible and pj == len(output_str):
+            print(f"{silly} {wrong_char}")
+            if quiet:
+                print(quiet)
+            else:
+                print("-")
+            return
 
 
 def run_tests():
