@@ -124,6 +124,30 @@ All test cases are loaded from official CCC test data:
 - Format: `*.in` (input) and `*.out` (expected output)
 - Includes both sample and official test cases
 
+## 🧠 Preparation Module
+
+The `prep/` folder contains resources to build your Python foundation before tackling full CCC problems.
+
+### 📂 Structure
+- **`prep/practice/`**: 25+ micro-exercises covering essential algorithms and data structures.
+  - Basic: String manipulation, list operations, input parsing.
+  - Intermediate: Dictionaries, sets, frequency counting.
+  - Advanced: Matrix manipulation, recursion, grid traversal.
+- **`prep/run_quiz.py`**: Interactive quiz runner for basic concepts.
+- **`prep/run_quiz_advanced.py`**: Advanced quiz runner for harder topics.
+
+### 🚀 How to Use Prep
+1. **Run the Basic Quiz:**
+   ```bash
+   python3 prep/run_quiz.py
+   ```
+2. **Run the Advanced Quiz:**
+   ```bash
+   python3 prep/run_quiz_advanced.py
+   ```
+3. **Practice Specific Skills:**
+   Open any file in `prep/practice/` (e.g., `01_input_parser.py`) and implement the solution.
+
 ## 📚 File Format
 
 Each Python file includes:
