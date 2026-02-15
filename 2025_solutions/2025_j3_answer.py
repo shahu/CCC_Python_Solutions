@@ -31,18 +31,30 @@ def solve():
         uppercase = ''.join(c for c in code if c.isupper())
         
         # Extract all integers (positive and negative)
+        # Initialize the total sum of integers to 0
         total = 0
+        # Initialize the index variable `i` to 0 to start iterating through the string
         i = 0
+        # Get the length of the string `code` to use in the loop condition
         n_len = len(code)
+        # Iterate through the string as long as `i` is less than the length of the string
         while i < n_len:
+            # Check if the current character is a digit OR if it's a minus sign followed by a digit (representing a negative number)
             if code[i].isdigit() or (code[i] == '-' and i + 1 < n_len and code[i+1].isdigit()):
+                # Mark the start index of the number
                 start = i
+                # If the number starts with a minus sign, increment `i` to skip it
                 if code[i] == '-':
+                    # Move to the next character
                     i += 1
+                # Continue incrementing `i` as long as the current character is a digit
                 while i < n_len and code[i].isdigit():
+                    # Move to the next character
                     i += 1
+                # Convert the substring from `start` to `i` (the number) to an integer and add it to `total`
                 total += int(code[start:i])
             else:
+                # If the current character is not part of a number, increment `i` to move to the next character
                 i += 1
         
         print(uppercase + str(total))
