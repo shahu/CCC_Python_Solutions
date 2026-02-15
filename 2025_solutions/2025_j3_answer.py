@@ -25,11 +25,25 @@ def solve():
         code = input().strip()
         
         # Extract uppercase letters
+        # Extract only the uppercase letters from the code string.
+        # This generator expression iterates over each character 'c' in 'code',
+        # checks if it is uppercase using c.isupper(), and joins them into a new string.
         uppercase = ''.join(c for c in code if c.isupper())
         
         # Extract all integers (positive and negative)
-        numbers = re.findall(r'-?\d+', code)
-        total = sum(int(n) for n in numbers)
+        total = 0
+        i = 0
+        n_len = len(code)
+        while i < n_len:
+            if code[i].isdigit() or (code[i] == '-' and i + 1 < n_len and code[i+1].isdigit()):
+                start = i
+                if code[i] == '-':
+                    i += 1
+                while i < n_len and code[i].isdigit():
+                    i += 1
+                total += int(code[start:i])
+            else:
+                i += 1
         
         print(uppercase + str(total))
 
